@@ -1,0 +1,157 @@
+<style>
+  :root {
+    --theme-color-0: #e6f2ff;
+    --theme-color-1: #39ace7;
+    --theme-color-2: #0784b5;
+    --theme-color-3: #414c50;
+    --theme-color-4: #2d383c;
+    --theme-color-5: #1e2528;
+    --theme-color-6: #091014;
+    --foreground-rgb: var(--theme-color-0);
+    --background-rgb: var(--theme-color-6);
+    --border-color: var(--theme-color-4);
+    --active-color: var(--theme-color-1);
+    --deactive-color: var(--theme-color-3);
+    --module-background-color: var(--theme-color-5);
+    --module-hover-background-color: var(--theme-color-4);
+    --module-gap: 18px;
+    --transition-duration: 150ms;
+  }
+
+  body {
+    background-color: var(--background-rgb);
+    color: var(--foreground-rgb);
+  }
+
+  #container {
+    position: relative;
+  }
+
+  .node {
+    border: 1px solid var(--foreground-rgb);
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 50px;
+    justify-content: center;
+    position: absolute;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    transition: left 300ms ease-in-out, top 300ms ease-in-out;
+    width: 50px;
+  }
+
+  .node.pending {
+    border-style: dashed;
+  }
+</style>
+<div>
+  <label>
+    <input id="input" type="number">
+    <button onclick="insert()">Insert</button>
+    <button>Delete</button>
+    <button>Find</button>
+  </label>
+</div>
+<div id="container"></div>
+<template id="node-template">
+  <div class="node pending"></div>
+</template>
+<script>
+  class Node {
+    constructor(element, value) {
+      this.element = element;
+      this.value = value;
+
+      this.parent = null;
+      this.left = null;
+      this.right = null;
+    }
+  }
+
+  const container = document.querySelector('#container');
+  const input = document.querySelector('#input');
+
+  let root = null;
+
+  function createNode(value) {
+    const template = document.querySelector('#node-template');
+    const node = document.importNode(template.content, true);
+
+    const element = node.querySelector('.node');
+    element.innerText = value;
+    element.style.left = (container.getBoundingClientRect().width / 2 - 60) + 'px';
+    element.style.top = '40px';
+
+    container.append(node);
+    return new Node(element, value);
+  }
+
+  function insert() {
+    const value = input.value;
+    const node = createNode(value);
+
+    // Helper function to insert recursively
+    function insertNode(currentNode, newNode) {
+      if (currentNode === null) {
+        return newNode; // Empty tree, make the new node the root
+      }
+
+      if (newNode.value < currentNode.value) {
+        currentNode.left = insertNode(currentNode.left, newNode);
+        currentNode.left.parent = currentNode; // Update parent reference
+      } else {
+        currentNode.right = insertNode(currentNode.right, newNode);
+        currentNode.right.parent = currentNode; // Update parent reference
+      }
+
+      return currentNode;
+    }
+
+    // Insert the node recursively starting from the root
+    root = insertNode(root, node);
+
+    // Animate the insertion (pseudocode)
+    animateNodeInsertion(node);
+  }
+
+  function animateNodeInsertion(node) {
+    // Calculate target position based on BST properties and parent location
+    const targetLeft = calculateTargetLeft(node);
+    const targetTop = calculateTargetTop(node);
+
+    // Animate the node's position from its initial location to the target position
+    node.element.style.left = targetLeft + 'px';
+    node.element.style.top = targetTop + 'px';
+
+    // Optionally, change the node class (e.g., remove "pending") after animation completes
+    node.element.addEventListener('transitionend', () => {
+      node.element.classList.remove('pending');
+    });
+  }
+
+  function calculateTargetLeft(node) {
+    if (node.parent === null) {
+      // Handle root node placement (center of the container)
+      return container.getBoundingClientRect().width / 2 - 25; // Adjust for half the node size
+    }
+
+    // Calculate offset based on parent position and child side (left or right)
+    const parentLeft = node.parent.element.getBoundingClientRect().left;
+     // Adjust for parent and node size
+    return node.parent.left === node ? parentLeft - 75 : parentLeft + 75;
+  }
+
+  function calculateTargetTop(node) {
+    if (node.parent === null) {
+      // Place the root node at the top
+      return 40;
+    }
+
+    // Increase top position based on depth (assuming binary tree)
+    const parentTop = node.parent.element.getBoundingClientRect().top;
+    return parentTop + 80; // Adjust for node size and vertical spacing
+  }
+
+</script>
